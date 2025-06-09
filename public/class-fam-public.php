@@ -67,7 +67,18 @@ class FAM_Public {
         }
 
         $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . $file_data->file_path;
+        $file_path = $file_data->file_path;
+
+        // file_path may be stored as a URL. Convert to absolute path in uploads
+        if (filter_var($file_path, FILTER_VALIDATE_URL)) {
+            if (strpos($file_path, $upload_dir['baseurl']) === 0) {
+                $file_path = $upload_dir['basedir'] . substr($file_path, strlen($upload_dir['baseurl']));
+            }
+        } else {
+            if (strpos($file_path, $upload_dir['basedir']) !== 0) {
+                $file_path = $upload_dir['basedir'] . '/' . ltrim($file_path, '/');
+            }
+        }
 
         if (!file_exists($file_path)) {
             wp_die(__('File not found on server.', 'file-archive-manager'));

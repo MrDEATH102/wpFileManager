@@ -138,7 +138,19 @@ class FAM_File {
         // Delete physical file if it exists
         if (!$file->external_url) {
             $upload_dir = wp_upload_dir();
-            $file_path = $upload_dir['basedir'] . $file->file_path;
+            $file_path = $file->file_path;
+
+            // file_path might be stored as a URL. Convert it to a path
+            if (filter_var($file_path, FILTER_VALIDATE_URL)) {
+                if (strpos($file_path, $upload_dir['baseurl']) === 0) {
+                    $file_path = $upload_dir['basedir'] . substr($file_path, strlen($upload_dir['baseurl']));
+                }
+            } else {
+                if (strpos($file_path, $upload_dir['basedir']) !== 0) {
+                    $file_path = $upload_dir['basedir'] . '/' . ltrim($file_path, '/');
+                }
+            }
+
             if (file_exists($file_path)) {
                 unlink($file_path);
             }
