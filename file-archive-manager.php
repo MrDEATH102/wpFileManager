@@ -2,7 +2,7 @@
 /**
  * Plugin Name: File Archive Manager
  * Plugin URI: https://themsah.com
- * Description: A file management system with Elementor integration for WordPress
+* Description: A file management system with Elementor integration for WordPress
  * Version: 1.4.6
  * Author: Themsah
  * Author URI: https://themsah.com
