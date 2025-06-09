@@ -37,7 +37,8 @@ class FAM_File {
             }
             $attachment = get_post($attachment_id);
             $file_path = get_attached_file($attachment_id);
-            $file_url = wp_get_attachment_url($attachment_id);
+            $upload_dir = wp_upload_dir();
+            $relative_path = str_replace($upload_dir['basedir'], '', $file_path);
             $file_type = get_post_mime_type($attachment_id);
             $file_size = filesize($file_path);
             $result = $this->wpdb->insert(
@@ -45,7 +46,7 @@ class FAM_File {
                 array(
                     'folder_id' => $folder_id,
                     'name' => sanitize_text_field($attachment->post_title . '.' . pathinfo($file_path, PATHINFO_EXTENSION)),
-                    'file_path' => $file_url,
+                    'file_path' => $relative_path,
                     'file_type' => $file_type,
                     'file_size' => $file_size,
                     'external_url' => null
@@ -138,7 +139,7 @@ class FAM_File {
         // Delete physical file if it exists
         if (!$file->external_url) {
             $upload_dir = wp_upload_dir();
-            $file_path = $upload_dir['basedir'] . $file->file_path;
+            $file_path = trailingslashit($upload_dir['basedir']) . ltrim($file->file_path, '/');
             if (file_exists($file_path)) {
                 unlink($file_path);
             }
@@ -176,4 +177,38 @@ class FAM_File {
             array('%d')
         );
     }
-} 
+
+    /**
+     * Migrate stored file paths from absolute URLs to relative paths.
+     */
+    public static function migrate_file_paths() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'fam_files';
+        $upload_dir = wp_upload_dir();
+        $baseurl   = $upload_dir['baseurl'];
+        $basedir   = $upload_dir['basedir'];
+        $rows = $wpdb->get_results("SELECT id, file_path FROM {$table}");
+        foreach ($rows as $row) {
+            if (empty($row->file_path)) {
+                continue;
+            }
+            $relative = $row->file_path;
+            if (strpos($relative, $basedir) === 0) {
+                $relative = str_replace($basedir, '', $relative);
+            } elseif (strpos($relative, $baseurl) === 0) {
+                $relative = str_replace($baseurl, '', $relative);
+            } else {
+                if (strpos($relative, 'http') === 0) {
+                    $parsed = wp_parse_url($relative, PHP_URL_PATH);
+                    if ($parsed !== null) {
+                        $relative = $parsed;
+                    }
+                }
+            }
+            $relative = '/' . ltrim($relative, '/');
+            if ($relative !== $row->file_path) {
+                $wpdb->update($table, array('file_path' => $relative), array('id' => $row->id), array('%s'), array('%d'));
+            }
+        }
+    }
+}
