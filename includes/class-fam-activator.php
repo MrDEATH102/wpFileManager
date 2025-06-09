@@ -71,5 +71,9 @@ class FAM_Activator {
             $htaccess_content = "Order deny,allow\nDeny from all";
             file_put_contents($htaccess_file, $htaccess_content);
         }
+
+        // Migrate existing file paths to relative format
+        require_once FAM_PLUGIN_DIR . 'includes/class-fam-file.php';
+        FAM_File::migrate_file_paths();
     }
-} 
+}

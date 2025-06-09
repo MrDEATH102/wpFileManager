@@ -67,7 +67,7 @@ class FAM_Public {
         }
 
         $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . $file_data->file_path;
+        $file_path = trailingslashit($upload_dir['basedir']) . ltrim($file_data->file_path, '/');
 
         if (!file_exists($file_path)) {
             wp_die(__('File not found on server.', 'file-archive-manager'));
